@@ -6,6 +6,7 @@
 #include <vector>
 #include <unordered_map>
 #include <iostream>
+#include <memory>
 
 namespace crow
 {
@@ -199,7 +200,7 @@ inline char * qs_k2v(const char * key, char * const * qs_kv, int qs_kv_size, int
     return nullptr;
 }
 
-inline std::pair<std::string, std::string>* qs_dict_name2kv(const char * dict_name, char * const * qs_kv, int qs_kv_size, int nth = 0)
+inline std::unique_ptr<std::pair<std::string, std::string>> qs_dict_name2kv(const char * dict_name, char * const * qs_kv, int qs_kv_size, int nth = 0)
 {
     int i;
     size_t name_len, skip_to_eq, skip_to_brace_open, skip_to_brace_close;
@@ -228,7 +229,7 @@ inline std::pair<std::string, std::string>* qs_dict_name2kv(const char * dict_na
             {
                 auto key = std::string(qs_kv[i] + skip_to_brace_open, skip_to_brace_close - skip_to_brace_open);
                 auto value = std::string(qs_kv[i] + skip_to_eq);
-                return new std::pair<std::string, std::string>(key, value);
+                return std::unique_ptr<std::pair<std::string, std::string>>(new std::pair<std::string, std::string>(key, value));
             }
             else
             {
@@ -443,14 +444,10 @@ namespace crow
             int count = 0;
             while (1)
             {
-                auto element = qs_dict_name2kv(name.c_str(), key_value_pairs_.data(), key_value_pairs_.size(), count++);
-
-                if (element)
+                if (auto element = qs_dict_name2kv(name.c_str(), key_value_pairs_.data(), key_value_pairs_.size(), count++))
                     ret.insert(*element);
                 else
                     break;
-
-                delete element;
             }
             return ret;
         }
